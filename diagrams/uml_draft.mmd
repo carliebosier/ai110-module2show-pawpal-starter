@@ -1,0 +1,98 @@
+classDiagram
+    class Owner {
+        +str owner_id
+        +str name
+        +List~Pet~ pets
+        +Preferences preferences
+        +add_pet(pet)
+        +set_preferences(**kwargs)
+        +get_all_tasks_today()
+    }
+
+    class Pet {
+        +str pet_id
+        +str name
+        +str species
+        +str breed
+        +int age
+        +float weight
+        +str dietary_notes
+        +str medical_notes
+        +List~Task~ tasks
+        +add_task(task)
+        +get_tasks()
+        +update_profile(**kwargs)
+    }
+
+    class Task {
+        +str task_id
+        +str name
+        +Category category
+        +int duration_minutes
+        +Priority priority
+        +Frequency frequency
+        +datetime last_completed_time
+        +is_due(current_time)
+        +mark_complete()
+        +get_priority_score()
+    }
+
+    class Preferences {
+        +time wake_time
+        +time sleep_time
+        +int available_time_minutes
+        +fits(task)
+    }
+
+    class Scheduler {
+        +List~Task~ tasks
+        +int available_time_minutes
+        +generate_plan(tasks, available_time)
+        +sort_by_priority(tasks)
+        +fits(task, remaining_time)
+    }
+
+    class DailyPlan {
+        +date date
+        +Owner owner
+        +List~Task~ scheduled_tasks
+        +List~Task~ deferred_tasks
+        +List~str~ explanations
+    }
+
+    class Category {
+        <<enumeration>>
+        WALK
+        FEED
+        MED
+        GROOM
+        ENRICHMENT
+    }
+
+    class Priority {
+        <<enumeration>>
+        LOW
+        MEDIUM
+        HIGH
+        CRITICAL
+    }
+
+    class Frequency {
+        <<enumeration>>
+        DAILY
+        WEEKLY
+        EVERY_N_HOURS
+        SPECIFIC_DAYS
+    }
+
+    Owner *-- Pet
+    Owner *-- Preferences
+    Pet *-- Task
+
+    Task --> Category
+    Task --> Priority
+    Task --> Frequency
+
+    Scheduler ..> Task
+    Scheduler ..> Preferences
+    Scheduler ..> DailyPlan

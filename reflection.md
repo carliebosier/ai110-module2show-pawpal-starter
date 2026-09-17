@@ -4,8 +4,27 @@
 
 **a. Initial design**
 
-- Briefly describe your initial UML design.
-- What classes did you include, and what responsibilities did you assign to each?
+Three Core Actions 
+1. Add and manage a pet profile — The owner can register a pet (name, species, breed, age, weight, dietary/medical notes) so the system knows who it's caring for and can tailor task recommendations accordingly.
+2. Schedule and track recurring care tasks — The owner can create tasks (feedings, walks, medications, grooming, enrichment) with a frequency, duration, and priority, so the system knows what needs to happen and how often.
+3. Generate and view today's prioritized plan — The owner can ask the system to produce a daily schedule that fits available time, respects task priority/urgency (e.g., medication before optional enrichment), and explains why it ordered things that way.
+
+Classes
+- Pet
+    - Attributes: pet_id, name, species, breed, age, weight, dietary_notes, medical_notes
+    - Methods: add_task(task), get_tasks(), update_profile(**kwargs)
+- Task
+    - Attributes: task_id, name, category (walk/feed/med/groom/enrichment), duration_minutes, priority (e.g. enum: LOW/MEDIUM/HIGH/CRITICAL), frequency (daily, every N hours, specific days), preferred_time_window, is_completed
+    - Methods: is_due(current_time), mark_complete(), get_priority_score()
+- Owner
+    - Attributes: owner_id, name, pets (list of Pet), preferences (e.g. preferred wake time, available time blocks, "no walks after 9pm")
+    - Methods: add_pet(pet), set_preferences(**kwargs), get_all_tasks_today()
+- Scheduler
+    - Attributes: available_time_minutes, tasks (all due tasks across pets)
+    - Methods: generate_plan(tasks, available_time), _sort_by_priority(), _explain_decision(task)
+- DailyPlan
+    - Attributes: date, owner, scheduled_tasks (ordered list), deferred_tasks, explanations
+    - Methods: to_string() / display(), get_summary()
 
 **b. Design changes**
 
