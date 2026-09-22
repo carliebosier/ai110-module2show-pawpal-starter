@@ -1,15 +1,12 @@
 # PawPal+ Project Reflection
 
 ## 1. System Design
-
-**a. Initial design**
-
-Three Core Actions 
+**Three Core Actions**
 1. Add and manage a pet profile — The owner can register a pet (name, species, breed, age, weight, dietary/medical notes) so the system knows who it's caring for and can tailor task recommendations accordingly.
 2. Schedule and track recurring care tasks — The owner can create tasks (feedings, walks, medications, grooming, enrichment) with a frequency, duration, and priority, so the system knows what needs to happen and how often.
 3. Generate and view today's prioritized plan — The owner can ask the system to produce a daily schedule that fits available time, respects task priority/urgency (e.g., medication before optional enrichment), and explains why it ordered things that way.
 
-Classes
+**Classes**
 - Pet
     - Attributes: pet_id, name, species, breed, age, weight, dietary_notes, medical_notes
     - Methods: add_task(task), get_tasks(), update_profile(**kwargs)
@@ -22,9 +19,18 @@ Classes
 - Scheduler
     - Attributes: available_time_minutes, tasks (all due tasks across pets)
     - Methods: generate_plan(tasks, available_time), _sort_by_priority(), _explain_decision(task)
-- DailyPlan
-    - Attributes: date, owner, scheduled_tasks (ordered list), deferred_tasks, explanations
-    - Methods: to_string() / display(), get_summary()
+
+
+**a. Initial design**
+
+- Briefly describe your initial UML design.
+    My final UML design is built around exactly four core classes: `Task`, `Pet`, `Owner`, and `Scheduler`. `Owner` owns a list of `Pet`s through composition, and `Pet` owns a list of `Task`s the same way. `Scheduler` is connected to `Owner` and `Task` through dependency arrows rather than ownership, since it reads and processes their data — pulling due tasks and sorting them — without holding that data itself.
+
+- What classes did you include, and what responsibilities did you assign to each?
+    - Owner — holds an owner's id, name, list of Pets, and available time budget for the day; responsible for adding pets and collecting all tasks across every pet it manages.
+    - Pet — holds a pet's basic profile info (species, name, id) and its list of Tasks; responsible for adding and retrieving tasks.
+    - Task — represents a single recurring care item (walk, feeding, med, groom, enrichment); responsible for knowing its own schedule/frequency and completion status, and determining whether it's currently due.
+    - Scheduler — the "brain" of the system; retrieves due tasks from an Owner's pets, sorts them by urgency, and decides what fits within the available time, returning a plan.
 
 **b. Design changes**
 
