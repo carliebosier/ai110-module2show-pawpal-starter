@@ -15,7 +15,16 @@ def main() -> None:
     biscuit = Pet(pet_id="p1", name="Biscuit", species="Dog")
     whiskers = Pet(pet_id="p2", name="Whiskers", species="Cat")
  
-    # --- Tasks (at least three, with different times) ---
+    # --- Tasks added out of order on purpose, to prove sort_by_time() actually sorts ---
+    biscuit.add_task(
+        Task(
+            task_id="t2",
+            description="Evening medication",
+            time=now + timedelta(hours=8),
+            frequency="daily",
+            duration_minutes=5,
+        )
+    )
     biscuit.add_task(
         Task(
             task_id="t1",
@@ -23,15 +32,6 @@ def main() -> None:
             time=now - timedelta(days=1),  # last done yesterday -> due again
             frequency="daily",
             duration_minutes=30,
-        )
-    )
-    biscuit.add_task(
-        Task(
-            task_id="t2",
-            description="Evening medication",
-            time=now,
-            frequency="daily",
-            duration_minutes=5,
         )
     )
     whiskers.add_task(
@@ -43,16 +43,63 @@ def main() -> None:
             duration_minutes=20,
         )
     )
+    # One already-completed task, so the status filter has something to find.
+    whiskers.add_task(
+        Task(
+            task_id="t4",
+            description="Litter box scoop",
+            time=now - timedelta(hours=3),
+            frequency="daily",
+            duration_minutes=5,
+            is_completed=True,
+            completed_at=now - timedelta(hours=3),
+        )
+    )
+    # Deliberately overlaps t2 (Evening medication, 5 min, same start time) so
+    # Scheduler.find_conflicts() has something real to catch in this demo.
+    biscuit.add_task(
+        Task(
+            task_id="t5",
+            description="Evening playtime",
+            time=now + timedelta(hours=8),
+            frequency="daily",
+            duration_minutes=15,
+        )
+    )
  
     owner.add_pet(biscuit)
     owner.add_pet(whiskers)
  
-    # --- Generate today's plan ---
     scheduler = Scheduler()
+ 
+    # --- Sorting demo ---
+    print("=" * 40)
+    print("        ALL TASKS, SORTED BY TIME")
+    print("=" * 40)
+    for task in scheduler.sort_by_time(owner.get_all_tasks()):
+        print(f"  - [{task.time.strftime('%b %d, %I:%M %p')}] {task.description}")
+ 
+    # --- Filtering demo ---
+    print("\n" + "=" * 40)
+    print("        FILTER: BISCUIT'S TASKS ONLY")
+    print("=" * 40)
+    for task in owner.get_tasks_for_pet("p1"):
+        print(f"  - {task.description}")
+ 
+    print("\n" + "=" * 40)
+    print("        FILTER: COMPLETED TASKS ONLY")
+    print("=" * 40)
+    completed = owner.get_tasks_by_status(is_completed=True)
+    if completed:
+        for task in completed:
+            print(f"  - {task.description}")
+    else:
+        print("  (none completed yet)")
+ 
+    # --- Generate today's plan (unchanged from Phase 2) ---
     plan = scheduler.generate_plan(owner, now)
  
-    # --- Print a readable "Today's Schedule" ---
-    print("=" * 40)
+    print("\n" + "=" * 40)
     print("        TODAY'S SCHEDULE")
     print("=" * 40)
  
@@ -72,8 +119,16 @@ def main() -> None:
     for line in plan["explanations"]:
         print(f"  - {line}")
  
+    if plan["conflicts"]:
+        print("\n  Conflicts detected:")
+        for first, second in plan["conflicts"]:
+            print(f"  - '{first.description}' overlaps '{second.description}'")
+    else:
+        print("\nNo conflicts detected.")
+ 
     print("\n" + "=" * 40)
  
  
 if __name__ == "__main__":
     main()
+ 

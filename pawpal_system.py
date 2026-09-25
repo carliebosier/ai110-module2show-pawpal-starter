@@ -5,6 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
+# Only these frequencies have a recurrence rule simple enough to automate.
+_RECURRENCE_DELTAS: dict[str, timedelta] = {
+    "daily": timedelta(days=1),
+    "weekly": timedelta(days=7),
+}
+
 
 @dataclass
 class Task:
@@ -16,13 +22,17 @@ class Task:
     frequency: str
     is_completed: bool = False
     duration_minutes: int = 0
+    completed_at: datetime | None = None
 
     def is_due(self, current_time: datetime) -> bool:
         """Report whether this task needs doing as of the given time."""
         if not self.is_completed:
             return True
 
-        elapsed = current_time - self.time
+        # Fall back to `time` when a task was marked complete before
+        # `completed_at` existed (or was set directly without it).
+        last_done = self.completed_at if self.completed_at is not None else self.time
+        elapsed = current_time - last_done
         frequency = self.frequency.strip().lower()
 
         if frequency == "daily":
@@ -35,9 +45,32 @@ class Task:
         return True
 
     def mark_complete(self) -> None:
-        """Record that this task was finished, stamping the completion time onto `time`."""
+        """Record that this task was finished, leaving its scheduled `time` untouched."""
         self.is_completed = True
-        self.time = datetime.now()
+        self.completed_at = datetime.now()
+
+    def next_occurrence(self) -> Task | None:
+        """Build the next fresh occurrence of this task, or None if it doesn't recur."""
+        delta = _RECURRENCE_DELTAS.get(self.frequency.strip().lower())
+        if delta is None:
+            return None
+
+        return Task(
+            task_id=self._next_task_id(),
+            description=self.description,
+            time=self.time + delta,
+            frequency=self.frequency,
+            is_completed=False,
+            duration_minutes=self.duration_minutes,
+            completed_at=None,
+        )
+
+    def _next_task_id(self) -> str:
+        """Derive the next occurrence's id by bumping a trailing '-r<N>' counter."""
+        stem, separator, suffix = self.task_id.rpartition("-r")
+        if separator and suffix.isdigit():
+            return f"{stem}-r{int(suffix) + 1}"
+        return f"{self.task_id}-r2"
 
 
 @dataclass
@@ -56,6 +89,17 @@ class Pet:
     def get_tasks(self) -> list[Task]:
         """Return every task attached to this pet."""
         return self.tasks
+
+    def complete_task(self, task_id: str) -> Task | None:
+        """Mark one of this pet's tasks done, attaching and returning its next occurrence."""
+        for task in self.tasks:
+            if task.task_id == task_id:
+                task.mark_complete()
+                upcoming = task.next_occurrence()
+                if upcoming is not None:
+                    self.add_task(upcoming)
+                return upcoming
+        return None
 
 
 class Owner:
@@ -84,6 +128,17 @@ class Owner:
         for pet in self.pets:
             all_tasks.extend(pet.get_tasks())
         return all_tasks
+
+    def get_tasks_for_pet(self, pet_id: str) -> list[Task]:
+        """Return a copy of one pet's task list, or an empty list if no such pet."""
+        for pet in self.pets:
+            if pet.pet_id == pet_id:
+                return list(pet.get_tasks())
+        return []
+
+    def get_tasks_by_status(self, is_completed: bool) -> list[Task]:
+        """Return a new list of this owner's tasks matching the given completion status."""
+        return [task for task in self.get_all_tasks() if task.is_completed == is_completed]
 
 
 class Scheduler:
@@ -114,7 +169,42 @@ class Scheduler:
                     f"only {remaining_minutes} min left in the budget."
                 )
 
-        return {"scheduled": scheduled, "deferred": deferred, "explanations": explanations}
+        conflicts = self.find_conflicts(due_tasks)
+        for first, second in conflicts:
+            explanations.append(
+                f"Warning: '{first.description}' and '{second.description}' overlap "
+                f"— both run at the same time."
+            )
+
+        return {
+            "scheduled": scheduled,
+            "deferred": deferred,
+            "explanations": explanations,
+            "conflicts": conflicts,
+        }
+
+    def sort_by_time(self, tasks: list[Task]) -> list[Task]:
+        """Return a new list ordered by scheduled time, with `task_id` breaking ties."""
+        return sorted(tasks, key=lambda task: (task.time, task.task_id))
+
+    def find_conflicts(self, tasks: list[Task]) -> list[tuple[Task, Task]]:
+        """Pair up every still-pending task whose duration runs into a later task's start."""
+        ordered = self.sort_by_time([task for task in tasks if not task.is_completed])
+        conflicts: list[tuple[Task, Task]] = []
+
+        for index, first in enumerate(ordered):
+            for second in ordered[index + 1 :]:
+                # Sorted by start time, so once one task starts after `first` ends,
+                # every later task does too and none of them can overlap either.
+                if not self._overlaps(first, second):
+                    break
+                conflicts.append((first, second))
+
+        return conflicts
+
+    def _overlaps(self, first: Task, second: Task) -> bool:
+        """Report whether `first` is still running when `second` is due to start."""
+        return first.time + timedelta(minutes=first.duration_minutes) > second.time
 
     def _sort_by_priority(self, tasks: list[Task]) -> list[Task]:
         """Order tasks most urgent first, judging urgency by how overdue each one is."""

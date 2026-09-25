@@ -45,6 +45,26 @@ pip install -r requirements.txt
 ## 🖥️ Sample Output
 
 Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
+========================================
+        ALL TASKS, SORTED BY TIME
+========================================
+  - [Sep 17, 03:13 PM] Weekly nail trim
+  - [Sep 24, 03:13 PM] Morning walk
+  - [Sep 25, 12:13 PM] Litter box scoop
+  - [Sep 25, 11:13 PM] Evening medication
+  - [Sep 25, 11:13 PM] Evening playtime
+
+========================================
+        FILTER: BISCUIT'S TASKS ONLY
+========================================
+  - Evening medication
+  - Morning walk
+  - Evening playtime
+
+========================================
+        FILTER: COMPLETED TASKS ONLY
+========================================
+  - Litter box scoop
 
 ========================================
         TODAY'S SCHEDULE
@@ -53,6 +73,7 @@ Paste a sample of your app's CLI or Streamlit output here so a reader can see wh
 Scheduled:
   - Weekly nail trim (20 min)
   - Evening medication (5 min)
+  - Evening playtime (15 min)
 
 Deferred:
   - Morning walk (30 min)
@@ -61,6 +82,13 @@ Why these choices:
   - Scheduled 'Weekly nail trim' (20 min): it fit the time left, leaving 25 min.
   - Deferred 'Morning walk' (30 min): only 25 min left in the budget.
   - Scheduled 'Evening medication' (5 min): it fit the time left, leaving 20 min.
+  - Scheduled 'Evening playtime' (15 min): it fit the time left, leaving 5 min.
+  - Warning: 'Evening medication' and 'Evening playtime' overlap — both run at the same time.
+
+  Conflicts detected:
+  - 'Evening medication' overlaps 'Evening playtime'
+
+========================================
 
 
 ## 🧪 Testing PawPal+
@@ -85,10 +113,10 @@ Sample test output:
 
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Task sorting | `Scheduler.sort_by_time(tasks)` | Sorts by scheduled `time`, with `task_id` breaking ties. Separate from `_sort_by_priority()`, which orders by how overdue a task is for actual scheduling decisions. |
+| Filtering | `Owner.get_tasks_for_pet(pet_id)`, `Owner.get_tasks_by_status(is_completed)` | Return a filtered pet's tasks or tasks by completion status. Both return a new list so filtering never mutates the real task data. |
+| Conflict handling | `Scheduler.find_conflicts(tasks)` | Flags any two pending tasks whose durations overlap, including non-adjacent overlaps (a long task colliding with a task two slots later, not just the next one). Completed tasks are excluded. Report-only, doesn't change what gets scheduled. Surfaced through `generate_plan()`'s `"conflicts"` key and warning messages. |
+| Recurring tasks | `Task.next_occurrence()`, `Pet.complete_task(task_id)` | Completing a "daily" or "weekly" task through `complete_task()` automatically generates its next occurrence, based on the original scheduled time plus the interval (not the completion time), so a late completion doesn't drift the schedule. |
 
 ## 📸 Demo Walkthrough
 

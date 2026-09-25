@@ -45,12 +45,18 @@
 **a. Constraints and priorities**
 
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
+    - There are three main things my scheduler cares about. First is the time budget. `_fits()` checks if a task's `duration_minutes` fits into whatever `available_time_minutes` is left, and once that runs out, everything else gets pushed to the deferred list instead of scheduled. Second is urgency. I don't have a separate priority field on `Task`, so instead `_sort_by_priority()` just ranks tasks by how overdue they are. Anything never completed goes first, then whichever has been waiting the longest. Third is conflicts. `find_conflicts()` checks if any two due tasks overlap in time, like a task running past its duration into when another one is supposed to start, and it flags that as a warning without actually changing the schedule.
+
 - How did you decide which constraints mattered most?
+    - I started with Time and Urgency, since without them the app can't really do its one job, which is telling you what to do today and in what order. Conflict detection came later, once I realized that even if two tasks both individually fit the time budget, they could still be scheduled at the exact same time, which obviously doesn't work in real life. I kept conflict detection as just a warning instead of having it auto-fix the schedule, because deciding which task "wins" a conflict felt like something the owner should decide, not something I wanted the scheduler quietly deciding for them.
+
 
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
+    - `find_conflicts()` only counts two tasks as conflicting if one's duration actually bleeds into the next one's start time, so it uses `>` instead of `>=`. That means back-to-back tasks, where one ends right as the next starts, aren't flagged as a conflict, which is what I want. But it also means a task with `duration_minutes=0` can technically never conflict with anything, even something at the exact same timestamp, since a zero-length task "ends" the same instant it starts.
 - Why is that tradeoff reasonable for this scenario?
+    - Allowing back-to-back tasks matters way more than catching a zero-duration edge case. If a walk ends at 8:00 and breakfast starts at 8:00, that's just a normal morning, not a conflict, and I didn't want the scheduler flagging that as a problem. Every real task in this app takes some actual time anyway (walks, feedings, meds all have a duration), so the zero-duration case basically never comes up in practice. I decided it wasn't worth adding special-case logic to catch something that isn't really a realistic scenario for this app.
 
 ---
 
