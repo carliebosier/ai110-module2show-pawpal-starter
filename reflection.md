@@ -34,9 +34,10 @@
 
 **b. Design changes**
 
-- Did your design change during implementation?
+- Did your design change during implementation? Yes
 - If yes, describe at least one change and why you made it.
-
+    - My first draft added two extra classes beyond the original four: `ScheduledTask` (to wrap a `Task` with a specific start/end time and its own completion flag) and `Recurrence` (to break frequency into `interval_hours` and `specific_days`). I added these after realizing that tracking completion directly on a recurring `Task` was technically wrong. A "daily walk" shouldn't itself be permanently marked "completed," since that status needs to reset each day. After review, I removed both extra classes and instead added a single `is_completed`/timestamp field directly on `Task`, keeping completion tracking self-contained.
+    - My second draft also introduced `Preferences` (a class for wake/sleep time and available minutes) and `DailyPlan` (a class to hold scheduled tasks, deferred tasks, and explanations) as separate objects owned by `Owner` and produced by `Scheduler`. After confirming the assignment scope only called for four classes total, I put both into the existing structure instead of keeping them separate. `available_time_minutes` moved directly onto `Owner` as an attribute, and `Scheduler.generate_plan()` now returns a simple dictionary (with `scheduled`, `deferred`, and `explanations` keys) instead of a dedicated `DailyPlan` object. This kept the design at exactly four classes as required, at the cost of `Scheduler`'s return value being a plain dict rather than a typed object. 
 ---
 
 ## 2. Scheduling Logic and Tradeoffs
