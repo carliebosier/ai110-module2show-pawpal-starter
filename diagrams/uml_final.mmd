@@ -1,0 +1,53 @@
+classDiagram
+    class Owner {
+        +str owner_id
+        +str name
+        +List~Pet~ pets
+        +int available_time_minutes
+        +add_pet(pet) None
+        +get_all_tasks() List~Task~
+        +get_tasks_for_pet(pet_id) List~Task~
+        +get_tasks_by_status(is_completed) List~Task~
+    }
+
+    class Pet {
+        +str pet_id
+        +str name
+        +str species
+        +List~Task~ tasks
+        +add_task(task) None
+        +get_tasks() List~Task~
+        +complete_task(task_id) Task
+    }
+
+    class Task {
+        +str task_id
+        +str description
+        +datetime time
+        +str frequency
+        +bool is_completed
+        +int duration_minutes
+        +datetime completed_at
+        +is_due(current_time) bool
+        +mark_complete() None
+        +next_occurrence() Task
+        -_next_task_id() str
+    }
+
+    class Scheduler {
+        +generate_plan(owner, current_time) dict
+        +sort_by_time(tasks) List~Task~
+        +find_conflicts(tasks) List~Task~
+        -_overlaps(first, second) bool
+        -_sort_by_priority(tasks) List~Task~
+        -_fits(task, remaining_minutes) bool
+    }
+
+    Owner "1" *-- "many" Pet : owns
+    Pet "1" *-- "many" Task : has care tasks
+    Scheduler ..> Owner : retrieves tasks from
+    Scheduler ..> Task : reads, sorts, and detects conflicts
+    Task ..> Task : creates next occurrence
+
+    note for Task "completed_at is None until mark_complete() runs; next_occurrence() returns None for non-recurring frequencies"
+    note for Scheduler "Stateless - no attributes. find_conflicts() returns pairs of overlapping Tasks."

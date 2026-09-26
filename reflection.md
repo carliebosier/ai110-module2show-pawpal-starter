@@ -65,12 +65,21 @@
 **a. How you used AI**
 
 - How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
+    - I used AI throughout the project as both a code generator and development assistant. I used it to generate initial code, add and modify methods, help implement scheduler behavior, write and update tests, troubleshoot bugs, connect the Streamlit UI to the existing classes, and improve the README and documentation. I also used it to reason through design decisions and compare the implementation against the UML.
+    - One of the most useful things was giving AI specific pieces of my project and asking it to make targeted changes rather than asking it to build the entire system without direction. For example, I used it to work through sorting, recurrence, filtering, and conflict detection, and then checked the generated code against what the project actually required. I also compared my original UML with the finished pawpal_system.py and used AI to identify methods and relationships that needed to be reflected in the final diagram.
+
 - What kinds of prompts or questions were most helpful?
+    - Specific, task-focused prompts were much more useful than vague ones. Asking AI to implement a particular method, debug a specific failing test, compare the UML to the code, or make a targeted UI change gave me something concrete to review. I found that AI was very effective at generating and modifying code quickly, but I still needed to understand what it generated and verify that it matched the project's requirements.
 
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
+   - One example was the possibility of adding extra classes such as ScheduledTask, Recurrence, Preferences, or DailyPlan. AI could make those designs work, but I chose not to keep adding classes because the assignment was intended to have four core classes and I wanted to keep the architecture manageable. Instead, I kept the necessary behavior inside Task, Owner, and Scheduler where it fit the existing design.
+    - I also did not automatically trust generated explanations or documentation. For example, when a draft described _sort_by_priority() as ordering tasks by how overdue they were, I checked the actual implementation and found that its sort key was (is_completed, time, duration_minutes, task_id). I changed the documentation to describe what the code actually did.
+
 - How did you evaluate or verify what the AI suggested?
+    - I verified generated code by reading it, comparing it against the assignment requirements and my UML, running the test suite, and manually testing the Streamlit application. This caught issues that AI-generated code did not automatically prevent, including a recurrence bug and a mistake in one of my own tests. I also found UI issues during manual testing that were not obvious from the passing tests.
+    - AI generated a significant amount of the project's code, but it did not replace my responsibility for deciding what belonged in the system. I had to review the generated code, test it, reject changes that did not fit the architecture, and make sure the final implementation matched the design I was responsible for.
 
 ---
 
@@ -79,12 +88,18 @@
 **a. What you tested**
 
 - What behaviors did you test?
+    - The suite is 15 tests, and I aimed them at the four behaviors the whole app depends on: chronological sorting through `sort_by_time()`, filtering through `get_tasks_for_pet()` and `get_tasks_by_status()`, recurrence through `next_occurrence()` and `complete_task()`, and conflict detection through `find_conflicts()`. For conflicts I specifically tested non-adjacent overlaps. A long task colliding with one two slots later, not just the very next one because that's the case a naive implementation quietly misses.
+
 - Why were these tests important?
+    - Because they caught two real problems. The bigger one was a recurrence bug: completing a task could make its next occurrence show up as due immediately instead of the following day, since a pending task was being treated as due no matter what its scheduled time was. `is_due()` now checks that the scheduled time has actually arrived before calling a pending task due. I don't think I would have found that by clicking around the app, because it only shows up right after you complete something. The second was a bug in one of my own tests, where I mixed up two task IDs and was asserting against the wrong object. 
 
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
+    - 4/5. All 15 tests pass, total coverage is 95%, and `pawpal_system.py` sits at 89%. The behaviors I actually care about are covered, and the two bugs I found are fixed. I also went back and checked the AI-generated changes instead of assuming that passing tests meant everything was automatically correct. But roughly 11% of `pawpal_system.py` isn't covered yet, and having written a broken test myself, I'm not willing to treat a green suite as proof the logic is airtight. It proves the paths I thought to check behave the way I expected, which is not quite the same claim.
+
 - What edge cases would you test next if you had more time?
+    - A zero-duration task against the conflict boundary, since `_overlaps()` uses `>` and a zero-length task can never overlap anything. Frequencies that aren't "daily" or "weekly," which currently fall through to being treated as always due. `complete_task()` called with a `task_id` that doesn't exist on that pet. An owner with `available_time_minutes` set to 0, where everything should defer. And completing the same recurring task several times in a row, to make sure `_next_task_id()` keeps incrementing cleanly instead of generating IDs that collide.
 
 ---
 
@@ -93,11 +108,15 @@
 **a. What went well**
 
 - What part of this project are you most satisfied with?
+    - Honestly, working in separate phases is what saved this project. Doing architecture and UML first, then implementation, then testing, then the Streamlit integration, then final polish meant that when something broke I usually knew which layer it belonged to instead of hunting across the whole thing. It also kept me from treating my first design as final. When I compared my original UML against the finished code, there were eleven things that needed correcting, and I wrote a separate `uml_final.mmd` rather than pretending the first draft had been right all along.
+    - The phase split also exposed a gap I don't think I'd have caught otherwise. `pawpal_system.py` had sorting, filtering, recurrence, and conflict detection all working and tested, while `app.py` was still on a version that surfaced none of it. The logic was fine, the app just wasn't showing any of it. Treating UI integration as its own phase is what made that visible instead of letting me assume "the tests pass, so the app works."
 
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
+    - I'd revisit `generate_plan()` returning a plain dictionary. It works, and I chose it deliberately to stay within four classes, but the return shape basically only exists in my head and in the code that reads it, nothing enforces that `"conflicts"` is a list of pairs, and `app.py` has to just know that. I'd also want to close some of that uncovered 11%, and I'd look harder at the frequency handling, since anything that isn't "daily" or "weekly" currently falls through to always-due, which is a simplification rather than real behavior.
 
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+    - That being the lead architect is mostly about deciding what the system should be and then actually checking whether what got built matches that decision, across the code, the tests, the UI, the UML, and the documentation. Those five things drift apart on their own if nobody keeps them honest, and every place they drifted in this project, it was because I'd assumed one of them was still true instead of verifying it. AI made the actual implementation and checking dramatically faster. It generated a lot of the code, helped me debug it, and helped me catch places where my different project pieces didn't match. What it couldn't do was tell me that PawPal+ should have four classes instead of eight, or that a scheduling conflict deserves a warning rather than a silent fix. Those were mine, and keeping them mine is the part I'd want to carry into the next project.
