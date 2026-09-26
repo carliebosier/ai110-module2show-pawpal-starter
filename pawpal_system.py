@@ -27,7 +27,10 @@ class Task:
     def is_due(self, current_time: datetime) -> bool:
         """Report whether this task needs doing as of the given time."""
         if not self.is_completed:
-            return True
+            # A pending task is only due once its scheduled time has arrived.
+            # Without this, a next occurrence generated for tomorrow would be
+            # treated as due today, since it starts out incomplete.
+            return current_time >= self.time
 
         # Fall back to `time` when a task was marked complete before
         # `completed_at` existed (or was set directly without it).
