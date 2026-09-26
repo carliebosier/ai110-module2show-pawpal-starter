@@ -48,11 +48,11 @@ Paste a sample of your app's CLI or Streamlit output here so a reader can see wh
 ========================================
         ALL TASKS, SORTED BY TIME
 ========================================
-  - [Sep 17, 03:13 PM] Weekly nail trim
-  - [Sep 24, 03:13 PM] Morning walk
-  - [Sep 25, 12:13 PM] Litter box scoop
-  - [Sep 25, 11:13 PM] Evening medication
-  - [Sep 25, 11:13 PM] Evening playtime
+  - [Sep 18, 11:20 AM] Weekly nail trim
+  - [Sep 25, 11:20 AM] Morning walk
+  - [Sep 26, 08:20 AM] Litter box scoop
+  - [Sep 26, 10:20 AM] Evening medication
+  - [Sep 26, 10:20 AM] Evening playtime
 
 ========================================
         FILTER: BISCUIT'S TASKS ONLY
@@ -85,7 +85,7 @@ Why these choices:
   - Scheduled 'Evening playtime' (15 min): it fit the time left, leaving 5 min.
   - Warning: 'Evening medication' and 'Evening playtime' overlap — both run at the same time.
 
-  Conflicts detected:
+ Conflicts detected:
   - 'Evening medication' overlaps 'Evening playtime'
 
 ========================================
@@ -95,7 +95,7 @@ Why these choices:
 
 ```bash
 # Run the full test suite:
-pytest
+python -m pytest 
 
 # Run with coverage:
 pytest --cov
@@ -104,9 +104,31 @@ pytest --cov
 Sample test output:
 
 ```
-# Paste your pytest output here
-```
+# =================================================================== test session starts ===================================================================
+platform darwin -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/carliebosier/Documents/Howard Stuff/HU Fall 2026/Intro to AI/ai110-module2show-pawpal-starter
+plugins: cov-7.1.0, anyio-4.15.1
+collected 15 items                                                                                                                                        
 
+tests/test_pawpal.py ...............                                                                                                                [100%]
+
+===================================================================== tests coverage ======================================================================
+____________________________________________________ coverage: platform darwin, python 3.14.7-final-0 _____________________________________________________
+
+Name                   Stmts   Miss  Cover
+------------------------------------------
+conftest.py                0      0   100%
+pawpal_system.py         112     12    89%
+tests/test_pawpal.py     108      0   100%
+------------------------------------------
+TOTAL                    220     12    95%
+=================================================================== 15 passed in 0.05s ====================================================================
+```
+![pytest verbose output listing all 15 tests as PASSED](screenshots/pytest--verbose.png)
+
+![pytest coverage report showing 95% total coverage, 15 passed](screenshots/pytest--cov.png)
+**Confidence Level: (4/5)**
+  I feel pretty good about the core scheduling logic at this point. All 15 tests pass with 95% coverage, and the tests actually cover the behaviors that matter, sorting, filtering, recurrence, and conflict detection, not just the easy happy paths. I'm not giving it a full 5 stars though. While testing I found a real bug where completing a task would sometimes let its next occurrence show up as due immediately instead of the following day, and I even had a bug in one of my own tests where I mixed up two task IDs. Both got fixed, but it was a good reminder that passing tests don't automatically mean the logic is airtight. There's also still about 11% of pawpal_system.py that isn't covered by tests yet.
 ## 📐 Smarter Scheduling
 
 > Fill in once you've implemented scheduling logic.
